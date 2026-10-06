@@ -1,0 +1,19 @@
+{
+  "name": "peopleos-hrms-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev",
+    "start": "netlify dev",
+    "build": "echo \"Static HR SaaS site: no bundler required.\"",
+    "deploy:prod": "netlify deploy --prod --dir=site --functions=netlify/functions"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.1",
+    "netlify-cli": "^17.38.0",
+    "nodemailer": "^10.0.15"
+  }
+}

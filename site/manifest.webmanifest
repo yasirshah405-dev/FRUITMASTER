@@ -1,0 +1,17 @@
+{
+  "name": "Fruitmaster HR",
+  "short_name": "Fruitmaster HR",
+  "start_url": "/?portal=employee",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#25375a",
+  "icons": [
+    {
+      "src": "/hrms-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
