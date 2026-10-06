@@ -652,8 +652,7 @@
     async function logoImage(){
       var source=data.settings.logoData;if(!source)return null;
       var image=await new Promise(function(resolve,reject){var img=new Image();img.onload=function(){resolve(img);};img.onerror=function(){reject(new Error("The company logo could not be loaded for the payslip."));};img.src=source;});
-      var scaleFactor = Number(data.settings.payslipLogoScale || 100) / 100;
-      var scale=Math.min(240/image.width,100/image.height) * scaleFactor,canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+      var scale=Math.min(240/image.width,100/image.height),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
       var context=canvas.getContext("2d");context.fillStyle="#ffffff";context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
       var base64=canvas.toDataURL("image/jpeg",0.9).split(",")[1],binary=atob(base64),bytes=new Uint8Array(binary.length);for(var i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
       return {width:canvas.width,height:canvas.height,bytes:bytes};
@@ -673,7 +672,7 @@
       }
       var logoBox=design==="classic"?null:{x:463,y:779,w:84,h:48};
       if(logo){
-        var maxW=logoBox?logoBox.w-10:76,maxH=logoBox?logoBox.h-10:42,logoScale=Math.min(maxW/logo.width,maxH/logo.height),logoW=logo.width*logoScale,logoH=logo.height*logoScale,logoX=logoBox?logoBox.x+(logoBox.w-logoW)/2:493-logoW,logoY=logoBox?logoBox.y+(logoBox.h-logoH)/2:778;
+        var maxW=logoBox?logoBox.w-10:76,maxH=logoBox?logoBox.h-10:42,requestedScale=Number(data.settings.payslipLogoScale || 100)/100,baseScale=Math.min(maxW/logo.width,maxH/logo.height),displayScale=Math.min(baseScale * requestedScale, 1),logoW=logo.width*displayScale,logoH=logo.height*displayScale,logoX=logoBox?logoBox.x+(logoBox.w-logoW)/2:493-logoW,logoY=logoBox?logoBox.y+(logoBox.h-logoH)/2:778;
         if(logoBox)commands.push("q 1 1 1 rg "+logoBox.x+" "+logoBox.y+" "+logoBox.w+" "+logoBox.h+" re f Q");
         commands.push("q "+logoW.toFixed(2)+" 0 0 "+logoH.toFixed(2)+" "+logoX.toFixed(2)+" "+logoY.toFixed(2)+" cm /Logo Do Q");
       }
