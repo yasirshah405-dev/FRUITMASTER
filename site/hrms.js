@@ -233,13 +233,13 @@
     return themes[theme]||themes.blue;
   }
   function money(n) { return new Intl.NumberFormat("en-IN", { style:"currency", currency:"INR", maximumFractionDigits:0 }).format(Number(n) || 0); }
-  var payrollEditorEmployee = "", attendanceEditorId = "";
+  var payrollEditorEmployee = "", attendanceEditorId = "", compliancePeriod = TODAY.slice(0,7);
   function payrollProfile(e) {
     var p=e.pay||{},gross=Math.max(0,Number(e.salary)||0),basic=Number(p.basic),da=Number(p.da),hra=Number(p.hra),special=Number(p.specialAllowance),other=Number(p.otherEarnings);
     if(!e.pay){basic=Math.round(gross*.5);da=0;hra=Math.round(basic*.4);special=Math.max(0,gross-basic-da-hra);other=0;}
     else {basic=isFinite(basic)?basic:Math.round(gross*.5);da=isFinite(da)?da:0;hra=isFinite(hra)?hra:Math.round(basic*.4);special=isFinite(special)?special:Math.max(0,gross-basic-da-hra);other=isFinite(other)?other:0;}
     var otherExcluded=Math.max(0,Number(p.otherExcluded)||0);
-    return {basic:basic,da:da,hra:hra,specialAllowance:special,otherEarnings:other,otherExcluded:otherExcluded,loan:Math.max(0,Number(p.loan)||0),pfEnabled:p.pfEnabled!==false,esiEnabled:typeof p.esiEnabled==="boolean"?p.esiEnabled:payrollWageBase({hra:hra,otherExcluded:otherExcluded},gross)<=data.payrollSettings.esiWageCeiling,taxRegime:p.taxRegime==="old"?"old":"new",resident:p.resident!==false,otherIncome:Math.max(0,Number(p.otherIncome)||0),oldDeductions:Math.max(0,Number(p.oldDeductions)||0),pastSalary:Math.max(0,Number(p.pastSalary)||0),priorTds:Math.max(0,Number(p.priorTds)||0),ageGroup:p.ageGroup||"under60"};
+    return {basic:basic,da:da,hra:hra,specialAllowance:special,otherEarnings:other,otherExcluded:otherExcluded,loan:Math.max(0,Number(p.loan)||0),pfEnabled:p.pfEnabled!==false,esiEnabled:typeof p.esiEnabled==="boolean"?p.esiEnabled:payrollWageBase({hra:hra,otherExcluded:otherExcluded},gross)<=data.payrollSettings.esiWageCeiling,uan:String(p.uan||""),esiNumber:String(p.esiNumber||""),taxRegime:p.taxRegime==="old"?"old":"new",resident:p.resident!==false,otherIncome:Math.max(0,Number(p.otherIncome)||0),oldDeductions:Math.max(0,Number(p.oldDeductions)||0),pastSalary:Math.max(0,Number(p.pastSalary)||0),priorTds:Math.max(0,Number(p.priorTds)||0),ageGroup:p.ageGroup||"under60"};
   }
   function profileGross(p){return Math.max(0,Number(p.basic)||0)+Math.max(0,Number(p.da)||0)+Math.max(0,Number(p.hra)||0)+Math.max(0,Number(p.specialAllowance)||0)+Math.max(0,Number(p.otherEarnings)||0);}
   function payrollWageBase(p,gross){var exclusions=Math.max(0,Number(p.hra)||0)+Math.max(0,Number(p.otherExcluded)||0);return Math.max(0,gross-Math.min(exclusions,Math.max(0,gross)*.5));}
@@ -294,7 +294,7 @@
     var pf=Math.round(pfBase*settings.pfEmployeeRate/100),employerPf=Math.round(pfBase*settings.pfEmployerRate/100);
     var esi=p.esiEnabled?Math.round(statutoryWages*settings.esiEmployeeRate/100):0,employerEsi=p.esiEnabled?Math.round(statutoryWages*settings.esiEmployerRate/100):0;
     var projectedTds=Math.ceil(Math.max(0,tax.tax-priorTds)/monthsLeft),tds=Math.min(projectedTds,Math.max(0,gross-pf-esi)),loan=Math.min(p.loan,Math.max(0,gross-pf-esi-tds)),deductions=pf+esi+loan+tds;
-    return {payModel:"monthly-full-v1",basic:p.basic,da:p.da,hra:p.hra,specialAllowance:p.specialAllowance,otherEarnings:p.otherEarnings,gross:gross,pf:pf,esi:esi,loan:loan,tds:tds,deductions:deductions,net:Math.max(0,gross-deductions),employerPf:employerPf,employerEsi:employerEsi,taxableAnnualProjection:tax.taxable,annualTax:tax.tax,taxRegime:p.taxRegime,scheduledDays:attendance.scheduledDays,paidDays:attendance.paidDays,unpaidDays:attendance.unpaidDays,missingDays:attendance.missingDays,presentDays:attendance.presentDays,remoteDays:attendance.remoteDays,paidLeaveDays:attendance.paidLeaveDays,attendanceFactor:factor};
+    return {payModel:"monthly-full-v1",basic:p.basic,da:p.da,hra:p.hra,specialAllowance:p.specialAllowance,otherEarnings:p.otherEarnings,otherExcluded:p.otherExcluded,gross:gross,statutoryWages:statutoryWages,pfWages:pfBase,esiWages:p.esiEnabled?statutoryWages:0,pf:pf,esi:esi,loan:loan,tds:tds,deductions:deductions,net:Math.max(0,gross-deductions),employerPf:employerPf,employerEsi:employerEsi,taxableAnnualProjection:tax.taxable,annualTax:tax.tax,taxRegime:p.taxRegime,scheduledDays:attendance.scheduledDays,paidDays:attendance.paidDays,unpaidDays:attendance.unpaidDays,missingDays:attendance.missingDays,presentDays:attendance.presentDays,remoteDays:attendance.remoteDays,paidLeaveDays:attendance.paidLeaveDays,attendanceFactor:factor};
   }
   function toastMsg(s) {
     if (window.toast) { window.toast(s); return; }
@@ -519,6 +519,7 @@
       field("Other taxable income / year",'<input name="otherIncome" type="number" min="0" step="1" value="'+p.otherIncome+'">')+field("Old regime deductions / exemptions per year",'<input name="oldDeductions" type="number" min="0" step="1" value="'+p.oldDeductions+'">')+
       field("Salary paid before this app in tax year",'<input name="pastSalary" type="number" min="0" step="1" value="'+p.pastSalary+'">')+field("TDS already withheld before this app",'<input name="priorTds" type="number" min="0" step="1" value="'+p.priorTds+'">')+
       '<label class="pay-check"><input name="pfEnabled" type="checkbox" '+(p.pfEnabled?'checked':'')+'> PF applies</label><label class="pay-check"><input name="esiEnabled" type="checkbox" '+(p.esiEnabled?'checked':'')+'> ESI applies this month</label><label class="pay-check"><input name="resident" type="checkbox" '+(p.resident?'checked':'')+'> Resident for tax rebate</label>',"Save salary and tax details");
+    profileForm=profileForm.replace('<label class="pay-check">',field("UAN",'<input name="uan" type="text" maxlength="12" value="'+esc(p.uan||"")+'" placeholder="12-digit UAN">')+field("ESIC/IP number",'<input name="esiNumber" type="text" maxlength="20" value="'+esc(p.esiNumber||"")+'" placeholder="Insurance number">')+'<label class="pay-check">');
     var rulesForm=form("payroll-rules",
       field("Employee PF rate (%)",'<input name="pfEmployeeRate" type="number" min="0" max="100" step="0.01" value="'+settings.pfEmployeeRate+'">')+field("Employer PF rate (%)",'<input name="pfEmployerRate" type="number" min="0" max="100" step="0.01" value="'+settings.pfEmployerRate+'">')+
       field("PF wage ceiling / month",'<input name="pfWageCeiling" type="number" min="0" step="1" value="'+settings.pfWageCeiling+'">')+field("Employee ESI rate (%)",'<input name="esiEmployeeRate" type="number" min="0" max="100" step="0.01" value="'+settings.esiEmployeeRate+'">')+
@@ -531,7 +532,31 @@
       '<div class="section-caption">Full monthly salary and deductions · attendance is separate</div>'+table(["Employee","Attendance recorded","Basic","DA","HRA","Special","Other","Gross","PF","ESI","Loan","TDS","Net pay","Status","Actions"],rows)+
       '<details class="payroll-settings"><summary>PF, ESI, and income tax settings</summary><p class="payroll-help">Rates and thresholds are editable estimates. PF and ESI applicability is read from each employee profile. New and old regime TDS is projected using the values configured here and the employee tax profile.</p>'+rulesForm+'</details>'+
       '<div class="section-caption">Employee salary and tax profile</div><p class="payroll-help">New employees start with an editable sample split: Basic 50% of gross, HRA 40% of Basic, and the balance as Special allowance. The statutory wage base subtracts HRA and any other excluded allowances you enter, subject to the 50% floor. Change these values to your signed salary structure. PF and ESI employer shares are shown in employer cost and are not subtracted from net pay.</p>'+profileForm;
+    document.querySelector("#moduleBody .payroll-period").insertAdjacentHTML("beforeend",'<button class="btn" data-act="open-compliance">PF &amp; ESI compliance</button>');
     document.getElementById("payPeriod").onchange=function(){renderPage("Payroll");};
+  }
+  function complianceEntries(period){
+    var settings=data.payrollSettings;
+    return data.employees.filter(function(e){return e.active;}).map(function(e){
+      var profile=payrollProfile(e),saved=data.payroll.find(function(p){return p.employee===e.id&&p.period===period;}),pay=saved&&saved.gross!=null&&(saved.status==="Paid"||saved.payModel==="monthly-full-v1")?saved:payrollEstimate(e,period),gross=Number(pay.gross)||0;
+      var wages=Number(pay.statutoryWages!=null?pay.statutoryWages:payrollWageBase({hra:Number(pay.hra!=null?pay.hra:profile.hra),otherExcluded:Number(pay.otherExcluded!=null?pay.otherExcluded:profile.otherExcluded)},gross));
+      var pfWages=Number(pay.pfWages!=null?pay.pfWages:profile.pfEnabled?Math.min(wages,settings.pfWageCeiling):0),esiWages=Number(pay.esiWages!=null?pay.esiWages:profile.esiEnabled?wages:0);
+      return {employee:e,pay:pay,profile:profile,gross:gross,pfWages:pfWages,esiWages:esiWages,employeePf:Number(pay.pf)||0,employerPf:Number(pay.employerPf)||0,employeeEsi:Number(pay.esi)||0,employerEsi:Number(pay.employerEsi)||0};
+    });
+  }
+  function exportCompliance(scheme,period){
+    var entries=complianceEntries(period).filter(function(row){return scheme==="pf"?row.profile.pfEnabled:row.profile.esiEnabled;}),rows;
+    if(scheme==="pf")rows=[["UAN","Employee","Department","Period","Gross wages","PF wages","Employee PF","Employer PF","UAN status"]].concat(entries.map(function(row){return[row.profile.uan,row.employee.name,row.employee.dept,period,row.gross,row.pfWages,row.employeePf,row.employerPf,row.profile.uan?"Ready":"Missing UAN"];}));
+    else rows=[["ESIC/IP number","Employee","Department","Period","Gross wages","ESI wages","Employee ESI","Employer ESI","IP status"]].concat(entries.map(function(row){return[row.profile.esiNumber,row.employee.name,row.employee.dept,period,row.gross,row.esiWages,row.employeeEsi,row.employerEsi,row.profile.esiNumber?"Ready":"Missing IP number"];}));
+    var filename=(scheme==="pf"?"pf-contribution-register-":"esi-contribution-register-")+period+".csv";exportCSV(filename,rows);toastMsg(filename+" downloaded.");
+  }
+  function renderCompliance(){
+    var period=compliancePeriod||TODAY.slice(0,7),entries=complianceEntries(period),pf=entries.filter(function(row){return row.profile.pfEnabled;}),esi=entries.filter(function(row){return row.profile.esiEnabled;}),pfEmployee=pf.reduce(function(sum,row){return sum+row.employeePf;},0),pfEmployer=pf.reduce(function(sum,row){return sum+row.employerPf;},0),esiEmployee=esi.reduce(function(sum,row){return sum+row.employeeEsi;},0),esiEmployer=esi.reduce(function(sum,row){return sum+row.employerEsi;},0);
+    setHead("Compliance","PF and ESI contribution registers linked to monthly payroll");
+    renderMetrics([["PF members",pf.length],["PF total contributions",money(pfEmployee+pfEmployer)],["ESI insured",esi.length],["ESI total contributions",money(esiEmployee+esiEmployer)]]);
+    var pfRows=pf.map(function(row){return"<tr><td>"+esc(row.employee.name)+"</td><td>"+(row.profile.uan?esc(row.profile.uan):'<span class="badge leave">Missing UAN</span>')+"</td><td>"+money(row.pfWages)+"</td><td>"+money(row.employeePf)+"</td><td>"+money(row.employerPf)+"</td></tr>";});
+    var esiRows=esi.map(function(row){return"<tr><td>"+esc(row.employee.name)+"</td><td>"+(row.profile.esiNumber?esc(row.profile.esiNumber):'<span class="badge leave">Missing IP number</span>')+"</td><td>"+money(row.esiWages)+"</td><td>"+money(row.employeeEsi)+"</td><td>"+money(row.employerEsi)+"</td></tr>";});
+    document.getElementById("moduleBody").innerHTML='<div class="section-caption">Contribution period</div><div class="feature-form payroll-period"><label><span class="field-label">Month</span><input id="compliancePeriod" type="month" value="'+esc(period)+'"></label><button class="btn" data-act="back-to-payroll">Open payroll</button><button class="btn primary" data-act="export-pf-compliance">Download PF register</button><button class="btn primary" data-act="export-esi-compliance">Download ESI register</button></div><div class="module-tools"><span>Uses paid payroll values where available; otherwise shows current payroll estimates.</span><span>'+pf.length+' PF · '+esi.length+' ESI</span></div><div class="section-caption">Provident fund · employee '+money(pfEmployee)+' · employer '+money(pfEmployer)+'</div>'+table(["Employee","UAN","PF wages","Employee PF","Employer PF"],pfRows)+'<div class="section-caption">Employee state insurance · employee '+money(esiEmployee)+' · employer '+money(esiEmployer)+'</div>'+table(["Employee","ESIC/IP number","ESI wages","Employee ESI","Employer ESI"],esiRows)+'<p class="payroll-help compliance-note">Add UAN and ESIC/IP numbers under Payroll → Pay setup. These CSVs are contribution registers for review; confirm the current EPFO/ESIC portal upload schema and statutory settings with your compliance adviser before filing.</p>';
   }
   function renderRecruitment() {
     setHead("Recruitment", "Hiring pipeline · manage open roles and candidates");
@@ -771,7 +796,7 @@
     document.getElementById("module").classList.toggle("hidden",page==="Overview");
     document.getElementById("sidebar").classList.remove("open");
     if(page==="Overview"){renderDashboard();return;}
-    var renderers={"Employee App":renderEmployeeApp,Holidays:renderHolidays,People:renderPeople,Departments:renderDepartments,Rules:renderRules,Attendance:renderAttendance,Leave:renderLeave,Payroll:renderPayroll,Recruitment:renderRecruitment,Onboarding:renderOnboarding,Performance:renderPerformance,Reports:renderReports,Settings:renderSettings};
+    var renderers={"Employee App":renderEmployeeApp,Holidays:renderHolidays,People:renderPeople,Departments:renderDepartments,Rules:renderRules,Attendance:renderAttendance,Leave:renderLeave,Payroll:renderPayroll,Compliance:renderCompliance,Recruitment:renderRecruitment,Onboarding:renderOnboarding,Performance:renderPerformance,Reports:renderReports,Settings:renderSettings};
     (renderers[page]||renderPeople)();
   }
   function syncNavigationForRole(){
@@ -825,7 +850,7 @@
     else if(kind==="review"){data.reviews.unshift({id:newId("r"),employee:v("employee"),rating:Number(v("rating")),comment:v("comment"),date:v("date")});toastMsg("Review saved.");}
     else if(kind==="pay-profile"){
       var payEmployee=person(v("employee"));if(!payEmployee){toastMsg("Choose an employee first.");return;}
-      var n=function(k){return Math.max(0,Number(fd.get(k))||0);},profile={basic:n("basic"),da:n("da"),hra:n("hra"),specialAllowance:n("specialAllowance"),otherEarnings:n("otherEarnings"),otherExcluded:n("otherExcluded"),loan:n("loan"),pfEnabled:!!formEl.querySelector('[name="pfEnabled"]').checked,esiEnabled:!!formEl.querySelector('[name="esiEnabled"]').checked,taxRegime:v("taxRegime")==="old"?"old":"new",ageGroup:v("ageGroup"),resident:!!formEl.querySelector('[name="resident"]').checked,otherIncome:n("otherIncome"),oldDeductions:n("oldDeductions"),pastSalary:n("pastSalary"),priorTds:n("priorTds")};
+      var n=function(k){return Math.max(0,Number(fd.get(k))||0);},profile={basic:n("basic"),da:n("da"),hra:n("hra"),specialAllowance:n("specialAllowance"),otherEarnings:n("otherEarnings"),otherExcluded:n("otherExcluded"),loan:n("loan"),pfEnabled:!!formEl.querySelector('[name="pfEnabled"]').checked,esiEnabled:!!formEl.querySelector('[name="esiEnabled"]').checked,uan:v("uan").replace(/\s+/g,""),esiNumber:v("esiNumber").replace(/\s+/g,""),taxRegime:v("taxRegime")==="old"?"old":"new",ageGroup:v("ageGroup"),resident:!!formEl.querySelector('[name="resident"]').checked,otherIncome:n("otherIncome"),oldDeductions:n("oldDeductions"),pastSalary:n("pastSalary"),priorTds:n("priorTds")};
       var updatedGross=profileGross(profile);if(updatedGross<=0){toastMsg("Enter at least one salary component above zero.");return;}
       payEmployee.pay=profile;payEmployee.salary=updatedGross;payrollEditorEmployee=payEmployee.id;invalidateUnpaidPayroll((document.getElementById("payPeriod")||{}).value||TODAY.slice(0,7));save();renderPage("Payroll");toastMsg("Salary structure and tax profile saved for "+payEmployee.name+".");return;
     }
@@ -1000,6 +1025,11 @@
     else if(act==="delete-task"){data.tasks=data.tasks.filter(function(x){return x.id!==id;});save();renderPage("Onboarding");}
     else if(act==="delete-goal"){data.goals=data.goals.filter(function(x){return x.id!==id;});save();renderPage("Performance");}
     else if(act==="delete-review"){data.reviews=data.reviews.filter(function(x){return x.id!==id;});save();renderPage("Performance");}
+    else if(act==="open-compliance"){
+      compliancePeriod=(document.getElementById("payPeriod")||{}).value||TODAY.slice(0,7);renderPage("Compliance");
+    } else if(act==="back-to-payroll"){renderPage("Payroll");}
+    else if(act==="export-pf-compliance"){exportCompliance("pf",(document.getElementById("compliancePeriod")||{}).value||compliancePeriod);}
+    else if(act==="export-esi-compliance"){exportCompliance("esi",(document.getElementById("compliancePeriod")||{}).value||compliancePeriod);}
     else if(act==="run-payroll"){
       var period=(document.getElementById("payPeriod")||{}).value||TODAY.slice(0,7),alreadyPaid=data.payroll.filter(function(p){return p.period===period&&p.status==="Paid";});data.payroll=data.payroll.filter(function(p){return p.period!==period||p.status==="Paid";});
       data.employees.filter(function(x){return x.active;}).forEach(function(x){if(alreadyPaid.some(function(p){return p.employee===x.id;}))return;var calc=payrollEstimate(x,period);data.payroll.push(Object.assign({id:newId("p"),employee:x.id,period:period,status:"Ready"},calc));});
@@ -1019,6 +1049,7 @@
     else if(act.indexOf("export-")===0){exportData(act.slice(7));}
   });
   moduleBody.addEventListener("change",async function(e){
+    if(e.target&&e.target.id==="compliancePeriod"){compliancePeriod=e.target.value||TODAY.slice(0,7);renderPage("Compliance");return;}
     if(!e.target||e.target.id!=="attendanceProofPhoto"||!pendingAttendanceAction)return;
     var action=pendingAttendanceAction,file=e.target.files&&e.target.files[0];pendingAttendanceAction="";if(!file)return;if(attendancePunchBusy)return;attendancePunchBusy=true;
     try{await submitOfficePunch(action,file);}
