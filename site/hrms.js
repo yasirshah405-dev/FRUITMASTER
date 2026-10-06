@@ -878,7 +878,7 @@
           var scale=Math.min(1,512/Math.max(image.width,image.height)),canvas=document.createElement("canvas");
           canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
           canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
-          data.settings.logoData=canvas.toDataURL("image/png");save();applyBranding();toastMsg("Logo updated across the shared workspace.");
+          data.settings.logoData=canvas.toDataURL("image/png");save();renderPage("Settings");toastMsg("Logo updated across the shared workspace.");
         };
         image.onerror=function(){toastMsg("That image could not be opened.");};
         image.src=reader.result;
